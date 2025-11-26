@@ -1,16 +1,16 @@
 from datetime import datetime, timedelta
-import uuid
 from typing import Optional, Dict, Any
+import uuid
 
 from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, Session
+
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from app.schemas.base import UserCreate
-from app.schemas.user import UserResponse, Token
+from app.schemas.user import UserCreate, UserResponse, Token
 
 Base = declarative_base()
 
@@ -24,6 +24,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 class User(Base):
     __tablename__ = "users"
 
+    # ---------------------------------------------------------------
+    # Columns
+    # ---------------------------------------------------------------
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     first_name = Column(String(50), nullable=False)
@@ -45,22 +48,22 @@ class User(Base):
     )
 
     # ---------------------------------------------------------------
-    # CORRECT repr FOR TEST EXPECTATIONS
+    # repr (your tests expect this style)
     # ---------------------------------------------------------------
     def __repr__(self):
         return f"<User(name={self.first_name} {self.last_name}, email={self.email})>"
 
     # ---------------------------------------------------------------
-    # Custom __init__ for tests that pass password=... directly
+    # Custom __init__ so tests can pass password="..."
     # ---------------------------------------------------------------
     def __init__(self, **kwargs):
         raw_password = kwargs.pop("password", None)
         super().__init__(**kwargs)
         if raw_password is not None:
-            self.password = raw_password  # triggers setter → hash
+            self.password = raw_password   # triggers setter → hashes
 
     # ---------------------------------------------------------------
-    # Password property / setter
+    # Password property (write-only)
     # ---------------------------------------------------------------
     @property
     def password(self):
@@ -107,14 +110,17 @@ class User(Base):
             return None
 
     # ---------------------------------------------------------------
-    # Registration
+    # Registration method (used by router)
     # ---------------------------------------------------------------
     @classmethod
-    def register(cls, db, user_data: Dict[str, Any]) -> "User":
-        raw_pw = user_data.get("password", "")
-        if len(raw_pw) < 6:
+    def register(cls, db: Session, user_data: Dict[str, Any]) -> "User":
+
+        # basic validation before Pydantic
+        raw_pw = user_data.get("password")
+        if not raw_pw or len(raw_pw) < 6:
             raise ValueError("Password must be at least 6 characters long")
 
+        # uniqueness check
         existing = db.query(cls).filter(
             (cls.email == user_data.get("email")) |
             (cls.username == user_data.get("username"))
@@ -123,30 +129,35 @@ class User(Base):
         if existing:
             raise ValueError("Username or email already exists")
 
+        # Validate with Pydantic
         try:
             validated = UserCreate.model_validate(user_data)
-
-            new_user = cls(
-                first_name=validated.first_name,
-                last_name=validated.last_name,
-                email=validated.email,
-                username=validated.username,
-            )
-
-            new_user.password = validated.password  # hash via setter
-
-            db.add(new_user)
-            db.flush()
-            return new_user
-
         except ValidationError as e:
             raise ValueError(str(e))
 
+        # Create user instance
+        new_user = cls(
+            first_name=validated.first_name,
+            last_name=validated.last_name,
+            email=validated.email,
+            username=validated.username,
+        )
+
+        # Hash password through setter
+        new_user.password = validated.password
+
+        db.add(new_user)
+        db.flush()       # Assigns UUID immediately for token creation
+
+        return new_user
+
     # ---------------------------------------------------------------
-    # Authentication
+    # Authentication method (used by router)
     # ---------------------------------------------------------------
     @classmethod
-    def authenticate(cls, db, username: str, password: str) -> Optional[Dict[str, Any]]:
+    def authenticate(cls, db: Session,
+                     username: str, password: str) -> Optional[Dict[str, Any]]:
+
         user = db.query(cls).filter(
             (cls.username == username) |
             (cls.email == username)
@@ -160,8 +171,10 @@ class User(Base):
 
         user_res = UserResponse.model_validate(user)
 
+        token = cls.create_access_token({"sub": str(user.id)})
+
         token_obj = Token(
-            access_token=cls.create_access_token({"sub": str(user.id)}),
+            access_token=token,
             token_type="bearer",
             user=user_res
         )

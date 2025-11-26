@@ -1,5 +1,3 @@
-# app/schemas/user.py
-
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -7,7 +5,7 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 # -----------------------------
-# NEW: Schema for creating a user
+# Schema for creating a user
 # -----------------------------
 class UserCreate(BaseModel):
     """Schema for creating a new user"""
@@ -31,7 +29,7 @@ class UserCreate(BaseModel):
 
 
 # -----------------------------
-# NEW: Schema for reading user data (no password)
+# Schema for reading user data (no password)
 # -----------------------------
 class UserRead(BaseModel):
     """Return user information without password fields"""
@@ -43,7 +41,7 @@ class UserRead(BaseModel):
 
 
 # -----------------------------
-# Existing UserResponse Schema
+# Full user response schema
 # -----------------------------
 class UserResponse(BaseModel):
     """Schema for full user response object"""
@@ -91,7 +89,7 @@ class Token(BaseModel):
 
 
 # -----------------------------
-# Token payload
+# Token payload schema
 # -----------------------------
 class TokenData(BaseModel):
     """Schema for JWT token payload"""
