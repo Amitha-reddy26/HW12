@@ -1,14 +1,53 @@
-## Running Integration Tests (pytest)
+# HW12 — FastAPI Calculator + User Auth + BREAD Endpoints + CI/CD
 
-This project includes full integration tests for:
-- User registration + login
+This project extends a FastAPI application with:
+- User registration + login (JWT authentication)
 - CRUD operations for calculations (BREAD endpoints)
-- Full FastAPI server startup (using Playwright and REST)
+- Full integration testing (pytest + Playwright + REST)
+- Automated Docker build and push (CI/CD)
+- PostgreSQL support via SQLAlchemy ORM
 
-###  Run all tests:
-```bash
-pytest -v
+---
 
-### Run only integration tests:
+##  Project Structure
+
+app/
+ ├── auth/
+ ├── models/
+ ├── routers/
+ ├── schemas/
+ ├── operations/
+ ├── database.py
+ ├── config.py
+ └── main.py
+
+tests/
+ ├── unit/
+ ├── integration/
+ └── e2e/
+
+Dockerfile
+requirements.txt
+README.md
+
+---
+
+
+# Running the App
+
+### **Start FastAPI locally**
 ```bash
-pytest tests/integration -v
+uvicorn main:app --reload
+```
+Visit 
+http://127.0.0.1:8000/docs
+
+---
+
+## Running the tests
+``` bash
+pytest
+```
+
+
+
