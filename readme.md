@@ -9,7 +9,7 @@ This project extends a FastAPI application with:
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```plaintext
 app/
