@@ -9,8 +9,9 @@ This project extends a FastAPI application with:
 
 ---
 
-##  Project Structure
+## 📁 Project Structure
 
+```plaintext
 app/
  ├── auth/
  ├── models/
@@ -29,6 +30,7 @@ tests/
 Dockerfile
 requirements.txt
 README.md
+```
 
 ---
 
